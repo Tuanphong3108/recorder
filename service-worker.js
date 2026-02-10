@@ -1,10 +1,6 @@
 const CACHE_NAME = "recorder-cache-v1";
 const ASSETS = [
   "index.html",
-  "playback.html",
-  "style.css",
-  "script.js",
-  "playback.js",
   "icon.png",
   "manifest.json"
 ];
