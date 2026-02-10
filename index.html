@@ -205,6 +205,19 @@
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
+        /* EDIT INPUT STYLE */
+        .edit-input {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--md-sys-color-primary);
+            border-radius: 8px;
+            color: white;
+            font-family: 'Google Sans Flex';
+            font-size: 1rem;
+            padding: 4px 8px;
+            outline: none;
+            width: 100%;
+        }
+
         .delete-btn {
             color: var(--md-sys-color-on-surface-variant);
             cursor: pointer; padding: 6px; border-radius: 50%;
@@ -309,6 +322,7 @@
         <p style="font-size: 1rem; opacity: 0.8; line-height: 1.8;">
             • Phiên bản: 2026.02.10<br>
             • Developer: Phong VN<br>
+			• Hướng dẫn đổi tên bản ghi: Nhấn vào tên > Nhập tên mới > Nhấn dấu tick hoặc Enter<br>
             • Trạng thái: Hoạt động tốt
         </p>
         <button onclick="toggleModal()" style="width: 100%; padding: 16px; border: none; border-radius: 20px; background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); font-weight: 800; font-family: 'Google Sans Flex'; cursor: pointer;">ĐÓNG</button>
@@ -543,6 +557,53 @@
             };
         }
 
+        // TÍNH NĂNG SỬA TÊN
+        function editName(id, currentName) {
+            if (isSelectionMode) return;
+            const titleElement = document.getElementById(`title-${id}`);
+            const container = titleElement.parentElement;
+            
+            // Thay đổi text thành input
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'edit-input';
+            input.value = currentName;
+            
+            const saveBtn = document.createElement('span');
+            saveBtn.className = 'material-symbols-outlined';
+            saveBtn.innerText = 'check';
+            saveBtn.style.cursor = 'pointer';
+            saveBtn.style.color = 'var(--md-sys-color-primary)';
+            
+            container.innerHTML = '';
+            container.appendChild(input);
+            container.appendChild(saveBtn);
+            input.focus();
+
+            const saveAction = () => {
+                const newName = input.value.trim() || currentName;
+                updateNameInDB(id, newName);
+            };
+
+            input.onkeydown = e => { if (e.key === 'Enter') saveAction(); };
+            saveBtn.onclick = saveAction;
+        }
+
+        async function updateNameInDB(id, newName) {
+            const trans = db.transaction("recordings", "readwrite");
+            const store = trans.objectStore("recordings");
+            const request = store.get(id);
+            request.onsuccess = () => {
+                const data = request.result;
+                data.name = newName;
+                store.put(data);
+            };
+            trans.oncomplete = () => {
+                loadLibrary();
+                showToast("Đã đổi tên bản ghi");
+            };
+        }
+
         function loadLibrary() {
             libraryContainer.innerHTML = '';
             const store = db.transaction("recordings", "readonly").objectStore("recordings");
@@ -562,7 +623,9 @@
                         </div>
                         <div style="flex:1; display:flex; flex-direction:column; gap:4px; overflow:hidden;">
                             <div class="card-top">
-                                <div class="record-title">${data.name}</div>
+                                <div id="container-${data.id}" style="flex:1; display:flex; align-items:center; gap:8px; overflow:hidden;">
+                                    <div class="record-title" id="title-${data.id}" onclick="editName(${data.id}, '${data.name}')">${data.name}</div>
+                                </div>
                                 ${!isSelectionMode ? `<span class="material-symbols-outlined delete-btn" onclick="deleteRecord(${data.id})">delete</span>` : ''}
                             </div>
                             <div style="font-size:0.85rem; opacity:0.6;">${data.duration} • ${new Date(data.timestamp).toLocaleDateString('vi-VN')}</div>
@@ -571,7 +634,8 @@
                     `;
                     
                     if (isSelectionMode) {
-                        card.onclick = () => {
+                        card.onclick = (e) => {
+                            if (e.target.closest('audio')) return;
                             const cb = card.querySelector('.custom-checkbox');
                             if (cb.classList.contains('checked')) { cb.classList.remove('checked'); selectedIds.delete(data.id); }
                             else { cb.classList.add('checked'); selectedIds.add(data.id); }
