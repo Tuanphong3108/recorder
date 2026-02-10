@@ -1,4 +1,4 @@
-const CACHE_NAME = 'recorder-app-v1';
+const CACHE_NAME = 'recorder-app-v2';
 const ASSETS_TO_CACHE = [
   '/',
   'google_recorder.html',
