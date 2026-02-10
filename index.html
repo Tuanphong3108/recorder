@@ -154,7 +154,6 @@
             position: relative;
         }
 
-        /* CUSTOM CHECKBOX VỚI HIỆU ỨNG HOVER SÁNG */
         .custom-checkbox {
             width: 24px; height: 24px; border: 2px solid var(--md-sys-color-on-surface-variant);
             border-radius: 6px; display: none; align-items: center; justify-content: center;
@@ -175,13 +174,8 @@
             z-index: -1;
         }
 
-        .custom-checkbox:hover::after {
-            opacity: 0.12;
-            transform: scale(1);
-        }
-
+        .custom-checkbox:hover::after { opacity: 0.12; transform: scale(1); }
         .custom-checkbox.visible { display: flex; }
-        
         .custom-checkbox.checked {
             background: var(--md-sys-color-primary);
             border-color: var(--md-sys-color-primary);
@@ -205,7 +199,6 @@
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
-        /* EDIT INPUT STYLE */
         .edit-input {
             background: rgba(255,255,255,0.1);
             border: 1px solid var(--md-sys-color-primary);
@@ -246,7 +239,6 @@
         }
         .secondary-btn.active { color: var(--md-sys-color-primary); font-variation-settings: 'FILL' 1; }
 
-        /* NÚT RECORD CHÍNH */
         .record-trigger {
             width: 88px; height: 88px; border-radius: 28px; 
             background-color: #FF5252; color: white;
@@ -259,25 +251,14 @@
         }
         .record-trigger:hover { border-radius: 50%; transform: scale(1.08); font-variation-settings: 'FILL' 1; }
         .record-trigger.active { width: 190px; border-radius: 100px; background-color: white; color: black; }
-        
-        /* HIỆU ỨNG SMOOTH CHO NÚT XÓA */
         .record-trigger.delete-mode {
             background-color: var(--md-sys-color-error);
             color: var(--md-sys-color-on-error);
             animation: popIn 0.4s var(--spring-easing);
         }
+        .record-trigger.hidden-scale { transform: scale(0); opacity: 0; pointer-events: none; }
 
-        /* Khi ẩn nút Mic trong chế độ chọn nhưng chưa chọn gì */
-        .record-trigger.hidden-scale {
-            transform: scale(0);
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        @keyframes popIn {
-            0% { transform: scale(0.5); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
+        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
         .label-stop { 
             display: none; font-weight: 900; margin-left: 14px; font-size: 1.3rem; 
@@ -322,7 +303,6 @@
         <p style="font-size: 1rem; opacity: 0.8; line-height: 1.8;">
             • Phiên bản: 2026.02.10<br>
             • Developer: Phong VN<br>
-			• Hướng dẫn đổi tên bản ghi: Nhấn vào tên > Nhập tên mới > Nhấn dấu tick hoặc Enter<br>
             • Trạng thái: Hoạt động tốt
         </p>
         <button onclick="toggleModal()" style="width: 100%; padding: 16px; border: none; border-radius: 20px; background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); font-weight: 800; font-family: 'Google Sans Flex'; cursor: pointer;">ĐÓNG</button>
@@ -379,12 +359,12 @@
         const toast = document.getElementById('toast');
         const ctx = canvas.getContext('2d');
 
-        let isRecording = false, seconds = 0, timerInterval;
+        let isRecording = false, timerInterval, startTime;
         let isSelectionMode = false;
         let selectedIds = new Set();
         let audioCtx, analyser, source, stream, mediaRecorder, chunks = [];
         let db;
-        let lastDuration = "00:00"; // Lưu thời lượng cuối cùng để lưu vào DB
+        let lastDuration = "00:00"; 
 
         window.addEventListener('load', () => {
             setTimeout(() => {
@@ -494,23 +474,23 @@
             }
         }
 
+        // TIMER LOGIC CHÍNH XÁC CAO
         function startTimer() {
-            seconds = 0;
+            startTime = Date.now();
             timerLabel.innerText = "00:00";
             timerInterval = setInterval(() => {
-                seconds++;
-                const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-                const s = (seconds % 60).toString().padStart(2, '0');
+                const delta = Math.floor((Date.now() - startTime) / 1000);
+                const m = Math.floor(delta / 60).toString().padStart(2, '0');
+                const s = (delta % 60).toString().padStart(2, '0');
                 lastDuration = `${m}:${s}`;
                 timerLabel.innerText = lastDuration;
-            }, 1000);
+            }, 100); // Check nhanh để cập nhật mượt
         }
 
         function resetTimerUI() {
             clearInterval(timerInterval);
             timerLabel.style.display = 'none';
             timerLabel.innerText = "00:00";
-            seconds = 0;
         }
 
         function draw() {
@@ -557,13 +537,11 @@
             };
         }
 
-        // TÍNH NĂNG SỬA TÊN
         function editName(id, currentName) {
             if (isSelectionMode) return;
             const titleElement = document.getElementById(`title-${id}`);
-            const container = titleElement.parentElement;
+            const container = document.getElementById(`container-${id}`);
             
-            // Thay đổi text thành input
             const input = document.createElement('input');
             input.type = 'text';
             input.className = 'edit-input';
@@ -592,9 +570,9 @@
         async function updateNameInDB(id, newName) {
             const trans = db.transaction("recordings", "readwrite");
             const store = trans.objectStore("recordings");
-            const request = store.get(id);
-            request.onsuccess = () => {
-                const data = request.result;
+            const req = store.get(id);
+            req.onsuccess = () => {
+                const data = req.result;
                 data.name = newName;
                 store.put(data);
             };
@@ -674,10 +652,7 @@
                 isRecording = false;
                 if (mediaRecorder) mediaRecorder.stop();
                 if (stream) stream.getTracks().forEach(t => t.stop());
-                
-                // RESET TIMER NGAY KHI DỪNG
                 resetTimerUI();
-                
                 recordBtn.classList.remove('active');
                 recordIcon.innerText = 'mic';
                 canvas.style.display = 'none';
@@ -689,14 +664,13 @@
         window.onresize = () => { canvas.width = window.innerWidth; canvas.height = 200; };
         window.onresize();
 	
-	// Đăng ký Service Worker để app chạy offline trên OPPO A6x
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js')
-            .then(reg => console.log('Đã kích hoạt chế độ Offline!'))
-            .catch(err => console.log('Lỗi kích hoạt Offline:', err));
-    });
-}
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(reg => console.log('Offline Ready'))
+                    .catch(err => console.log('Offline Error', err));
+            });
+        }
     </script>
 </body>
 </html>
