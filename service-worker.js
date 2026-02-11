@@ -1,7 +1,7 @@
-const CACHE_NAME = 'recorder-app-v2';
+const CACHE_NAME = 'recorder-app-v3';
 const ASSETS_TO_CACHE = [
   '/',
-  'google_recorder.html',
+  'index.html',
   'manifest.json',
   'icon.png',
   'https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@100..1000&display=swap',
